@@ -1,0 +1,12 @@
+name: if-vswm
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - python=3.10
+  - pygame
+  - pylink
+  - pygaze
+  - pip
+  - pip:
+      - psychopy==2026.1.3
