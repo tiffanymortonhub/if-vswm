@@ -4,8 +4,9 @@
 # importing the relevant libraries
 import random
 import csv
-import pandas as pd
-from psychopy.experiment import params
+import warnings
+
+from psychopy import gui, logging # these submodules are not loaded from a general import statement for psychopy.
 
 import constants
 from pygaze import libscreen
@@ -16,6 +17,10 @@ from pygaze import eyetracker
 
 # # # # #
 # experiment setup
+#  Todo build out the states [iti, fixation, stimulus, delay, response, feedback]. At this points get it to display the
+#   desired stimulus types using the param file for the desired time (from param file), in the correct place
+#   (specified in param file), accept a fixation in response, display appropriate
+#
 #  TODO Add in lines that will create the trial table. As an example to data for a trial table was saved to stateData
 #   and trialData in Genexpy/context_task.
 
@@ -26,21 +31,27 @@ from pygaze import eyetracker
 
 # TODO add in breaks at regular intervals. Lengths of time in between breaks should be specified in the param file.
 
-# TODO add dialogue box for scanner type, participant ID and autopilot.
-
-# TODO Make autopilot function and an option for the cursur to be used when the eyetracker is not connected. Both of these
+# TODO Make autopilot function and an option for the cursor to be used when the eyetracker is not connected. Both of these
 #  would be used for testing.This comes after you get a basic working program. Wondering if dummy mode on pygaze automatically
 #  does the cursor thing.
+
+# Todo add practice round. Subjects should only advance to the actual task after achieving an average performance in the practice
+#  round. Look at DOR task articles to find out what average performance is. Should be able to choose whether to include
+#  the practice round in the dialog box.
+
+# todo you are currently writing this as one long script. You should go back and make these functions and call the functions
+#  instead of just running one long script. It will increase usability in the future and efficiency overall.
+
 # create display object
 disp = libscreen.Display()
 
-# import parameters from csv file as a dictionary
-
+# import parameters from csv file
 # first create an empty dictionary
 # TODO check to make sure that the use of the param file is comprehensive. Check the values set in HCL lab tools and your
 #  context_ET param file as a way of ensuring that you have defined all necessary parameters.
 param_dict = {}
 
+# open the param file and iterate through the rows to populate the parameter dictionary
 with open ('param.csv', newline='', encoding='utf-8-sig') as file:
 	reader = csv.reader(file)
 	for row in reader:
@@ -52,12 +63,39 @@ with open ('param.csv', newline='', encoding='utf-8-sig') as file:
 		value = row[1].strip()
 		param_dict[key] = value
 
-# open dialogue box that prompts the user to choose experiment settings and supply subject ID
+# create dialog box for experiment settings and subject ID
+# Todo when referencing information collected from the dialog box dlg.data is a dictionary with the recorded responses.
+#  Keys are 'experiment mode', 'include practice' and 'subject ID'
 
-# Todo autopilot and cursor testing still need to be built
+# Todo When varying the type of feedback provided, can use the dialog box to determine which type(s) of feedback the
+#  subject sees throughout the experiment. Look for notes on feedback from your first year presentation, I think Xi had
+#  comments about how to do this.
+# start by making a dict with fields for the dialogue box
+exp_info = {'subject ID': '', 'experiment mode': ['data collection', 'autopilot', 'cursor testing'], 'include practice': True}
 
+
+# create the dialog box
+dlg = gui.DlgFromDict(dictionary=exp_info, title='Enter Experiment Info', tip= {
+	'subject ID': '', 'experiment mode': 'data collection mode will initiate a connection to the eyetracker. autopilot '
+										 'and cursor testing will start the experiment in dummy mode. Autopilot runs '
+										 'through the experiment automatically, cursor testing allows the user to simulate '
+										 'eye movements with the cursor using the mouse', 'include practice': 'When '
+										 'selected, the subject must successfully complete the practice round before advancing '
+										 'to the actual task'})
+
+# check that an acceptable response was provided. Otherwise, stop the experiment.
+if not dlg.OK:
+	logging.warning('User canceled info entry. Experiment ending...')
+	warnings.warn('User canceled info entry. Experiment ending...')
+	disp.close()
+	libtime.expend()
+#Todo autopilot and cursor testing still need to be built
 
 # create eyetracker object
+# Todo need conditional statement referencing dictionary with info from dialog box (see above) that will determine whether tracker type is 'eyelink'
+#  or 'dummy' based on experiment mode. Need to think more about the best way to provide and automatic response for autopilot
+#  to work. There is probably a way to quickly generate a fake, but plausible mouse input that will allow the experiment
+#  to run without input from the user during testing.
 tracker = eyetracker.EyeTracker(disp, 'eyelink', ())
 
 # create keyboard object
